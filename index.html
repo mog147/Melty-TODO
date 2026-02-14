@@ -653,13 +653,28 @@
         </nav>
     </div>
 
-    <!-- Modal Overlay -->
+    <!-- Advice Modal -->
     <div class="modal-overlay" id="adviceModal">
         <div class="modal-content">
             <div class="modal-icon"><i data-lucide="sparkles" size="24"></i></div>
             <div class="modal-title">Reality Whisper</div>
             <div class="modal-text" id="adviceText">現実世界の提言</div>
             <button class="btn-close" id="closeModal">UNDERSTOOD</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-icon"><i data-lucide="trash-2" size="24" style="color: #ef4444;"></i></div>
+            <div class="modal-title">Erase Memory?</div>
+            <div class="modal-text">この記憶を霧の彼方へ消し去ってもよろしいですか？</div>
+            <div style="display: flex; gap: 1rem; width: 100%; margin-top: 1rem;">
+                <button class="btn-close" id="confirmCancel"
+                    style="flex: 1; background: rgba(255,255,255,0.05); color: #999;">CANCEL</button>
+                <button class="btn-close" id="confirmOk"
+                    style="flex: 1; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">ERASE</button>
+            </div>
         </div>
     </div>
 
@@ -765,12 +780,23 @@
             renderGarden();
         }
 
+        let pendingDeleteId = null;
+        let pendingDeleteType = null;
+
+        function openConfirm(type, id) {
+            pendingDeleteType = type;
+            pendingDeleteId = id;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmModal').classList.remove('active');
+            pendingDeleteId = null;
+            pendingDeleteType = null;
+        }
+
         function deleteTodo(id) {
-            console.log('Deleting TODO:', id);
-            state.todos = state.todos.filter(t => Number(t.id) !== Number(id));
-            if (state.todos.length === 0) state.todos = [...DEFAULT_MELTY_TODOS];
-            saveData();
-            renderGarden();
+            openConfirm('todo', id);
         }
 
         // --- Long Press Logic ---
@@ -865,12 +891,7 @@
         }
 
         function deleteArchive(id) {
-            console.log('Deleting Archive:', id);
-            if (confirm('この記憶を消去してもよろしいですか？')) {
-                state.archives = state.archives.filter(a => Number(a.id) !== Number(id));
-                saveData();
-                renderArchives();
-            }
+            openConfirm('archive', id);
         }
 
         // --- Initialization ---
@@ -898,6 +919,24 @@
             });
 
             document.getElementById('closeModal').onclick = () => document.getElementById('adviceModal').classList.remove('active');
+
+            document.getElementById('confirmOk').onclick = () => {
+                const id = pendingDeleteId;
+                const type = pendingDeleteType;
+                if (type === 'todo') {
+                    state.todos = state.todos.filter(t => Number(t.id) !== Number(id));
+                    if (state.todos.length === 0) state.todos = [...DEFAULT_MELTY_TODOS];
+                    saveData();
+                    renderGarden();
+                } else if (type === 'archive') {
+                    state.archives = state.archives.filter(a => Number(a.id) !== Number(id));
+                    saveData();
+                    renderArchives();
+                }
+                closeConfirm();
+            };
+
+            document.getElementById('confirmCancel').onclick = closeConfirm;
 
             document.querySelectorAll('.nav-item').forEach(btn => {
                 btn.addEventListener('click', () => switchView(btn.dataset.view));
