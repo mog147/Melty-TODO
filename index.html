@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melty Note - Off-line Atelier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Pinyon+Script&family=Zen+Kaku+Gothic+New:wght@300;400&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: rgba(15, 15, 15, 0.4);
+            --border-white: rgba(255, 255, 255, 0.05);
+            --purple-glow: rgba(168, 85, 247, 0.1);
+            --text-main: #e5e7eb;
+            --text-dim: #6b7280;
+            --accent-purple: #a855f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Background Aesthetics --- */
+        .bg-grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(150px);
+            pointer-events: none;
+            mix-blend-mode: screen;
+            z-index: 1;
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: rgba(88, 28, 135, 0.1);
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 700px;
+            height: 700px;
+            background: rgba(30, 27, 75, 0.15);
+            animation-delay: -5s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        /* --- Main Container --- */
+        .container {
+            width: 100%;
+            max-width: 450px;
+            height: 90vh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-white);
+            border-radius: 2rem;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            transition: opacity 1s, transform 1s;
+        }
+
+        .container.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* --- Drip Decoration --- */
+        .drip-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 110px;
+            pointer-events: none;
+            z-index: 0;
+            filter: drop-shadow(0px 6px 12px rgba(139, 92, 246, 0.15));
+        }
+
+        /* --- Header --- */
+        header {
+            padding: 3.5rem 2rem 1rem;
+            text-align: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        h1 {
+            font-family: 'Pinyon Script', cursive;
+            font-size: 3.5rem;
+            color: rgba(243, 232, 255, 0.8);
+            text-shadow: 0 0 20px rgba(200, 200, 255, 0.2);
+            margin-bottom: 0.2rem;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            letter-spacing: 0.4em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* --- Content Areas --- */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 2rem 5rem;
+            position: relative;
+        }
+
+        .content-area::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .content-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.7s ease-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Garden (ToDo) View --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-bottom: 1px solid var(--border-white);
+            padding: 0.75rem 3rem 0.75rem 0.5rem;
+            color: var(--text-main);
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.5s;
+            border-radius: 0.25rem 0.25rem 0 0;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-add {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .btn-add:hover {
+            color: var(--accent-purple);
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.5s;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .todo-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-white);
+        }
+
+        .todo-item.completed {
+            opacity: 0.3;
+        }
+
+        .todo-icon {
+            margin-right: 1rem;
+            color: var(--text-dim);
+            transition: all 0.5s;
+        }
+
+        .completed .todo-icon {
+            color: #581c87;
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            font-weight: 300;
+            transition: all 0.7s;
+        }
+
+        .completed .todo-text {
+            text-decoration: line-through;
+            filter: blur(1px);
+        }
+
+        .btn-delete {
+            opacity: 0;
+            color: #450a0a;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .todo-item:hover .btn-delete {
+            opacity: 1;
+        }
+
+        .btn-delete:hover {
+            color: #991b1b;
+        }
+
+        /* --- Atelier (Note) View --- */
+        .atelier-textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-white);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            color: var(--text-main);
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            line-height: 2;
+            letter-spacing: 0.05em;
+            resize: none;
+            margin-bottom: 1.5rem;
+            outline: none;
+            transition: border-color 0.5s;
+        }
+
+        .atelier-textarea:focus {
+            border-color: rgba(168, 85, 247, 0.2);
+        }
+
+        .btn-weave {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 2rem;
+            background: rgba(88, 28, 135, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 2rem;
+            color: #ddd6fe;
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.7s;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-weave:hover {
+            background: rgba(88, 28, 135, 0.2);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.1);
+        }
+
+        /* --- Archives View --- */
+        .archive-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-white);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .archive-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(168, 85, 247, 0.2);
+        }
+
+        .archive-date {
+            font-family: 'Cinzel', serif;
+            font-size: 8px;
+            letter-spacing: 0.2em;
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .archive-text {
+            font-size: 0.85rem;
+            line-height: 2;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            white-space: pre-wrap;
+            padding-right: 2rem;
+            /* Avoid overlap with delete button */
+        }
+
+        .btn-delete-archive {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            border-radius: 50%;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-delete-archive:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.2);
+            transform: rotate(10deg);
+        }
+
+        /* --- Footer Navigation --- */
+        nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 85px;
+            /* Fixed height for consistency */
+            padding: 0 1rem 1.5rem;
+            /* Space for home indicator on mobile */
+            background: rgba(8, 8, 8, 0.98);
+            backdrop-filter: blur(30px);
+            border-top: 1px solid var(--border-white);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.4s;
+            opacity: 0.5;
+            height: 100%;
+            min-width: 70px;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: #c4b5fd;
+            opacity: 1;
+        }
+
+        .nav-item svg {
+            margin-bottom: 4px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .nav-item.active svg {
+            transform: translateY(-4px) scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+        }
+
+        .nav-item span {
+            font-family: 'Cinzel', serif;
+            font-size: 7px;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 15px;
+            width: 4px;
+            height: 4px;
+            background: #a855f7;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #a855f7;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8rem 0;
+            opacity: 0.2;
+            color: var(--text-dim);
+            gap: 1rem;
+        }
+
+        .empty-state span {
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            letter-spacing: 0.3em;
+        }
+
+        /* --- Modal (Advice) --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            max-width: 350px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-icon {
+            color: var(--accent-purple);
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+            animation: pulse-glow 3s infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        .modal-title {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .modal-text {
+            font-size: 0.9rem;
+            line-height: 1.8;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            margin-bottom: 2rem;
+        }
+
+        .btn-close {
+            background: none;
+            border: 1px solid var(--border-white);
+            color: var(--text-dim);
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-close:hover {
+            color: var(--text-main);
+            border-color: var(--accent-purple);
+        }
+
+        /* Prevent context menu during long press */
+        .todo-item {
+            -webkit-touch-callout: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-grain"></div>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="container hidden" id="appContainer">
+        <!-- SVG Drip Decoration -->
+        <div class="drip-header">
+            <svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <path
+                    d="M0,0 L100,0 L100,10 C90,10 85,30 75,30 C65,30 60,10 50,10 C40,10 35,35 25,35 C15,35 10,15 0,15 Z"
+                    fill="#141414" />
+            </svg>
+        </div>
+
+        <header>
+            <h1 id="headerTitle">Melty Note</h1>
+            <p class="subtitle" id="headerSubtitle">Collect your fragments</p>
+        </header>
+
+        <div class="content-area">
+            <!-- Garden View -->
+            <div id="view-garden" class="view active">
+                <div class="input-group">
+                    <input type="text" id="todoInput" placeholder="言葉を閉じ込める..." autocomplete="off">
+                    <button class="btn-add" id="addBtn"><i data-lucide="plus" size="18"></i></button>
+                </div>
+                <div id="todoList"></div>
+            </div>
+
+            <!-- Atelier View -->
+            <div id="view-atelier" class="view">
+                <textarea id="atelierInput" class="atelier-textarea" placeholder="言葉をここに沈める..."></textarea>
+                <button class="btn-weave" id="weaveBtn">
+                    <i data-lucide="feather" size="14"></i> PRESERVE MEMORY
+                </button>
+            </div>
+
+            <!-- Archives View -->
+            <div id="view-archives" class="view">
+                <div id="archiveList"></div>
+            </div>
+        </div>
+
+        <nav>
+            <button class="nav-item active" data-view="garden">
+                <i data-lucide="list" size="18"></i>
+                <span>GARDEN</span>
+            </button>
+            <button class="nav-item" data-view="atelier">
+                <i data-lucide="feather" size="18"></i>
+                <span>ATELIER</span>
+            </button>
+            <button class="nav-item" data-view="archives">
+                <i data-lucide="bookmark" size="18"></i>
+                <span>ARCHIVES</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="adviceModal">
+        <div class="modal-content">
+            <div class="modal-icon"><i data-lucide="sparkles" size="24"></i></div>
+            <div class="modal-title">Reality Whisper</div>
+            <div class="modal-text" id="adviceText">現実世界の提言</div>
+            <button class="btn-close" id="closeModal">UNDERSTOOD</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Data Management ---
+        const DEFAULT_MELTY_TODOS = [
+            { id: 1, text: "夜明けの淡い光をスプーンですくう", completed: false },
+            { id: 2, text: "誰にも宛てない手紙を瓶に詰める", completed: false },
+            { id: 3, text: "雨音の周波数をチューニングする", completed: false },
+            { id: 4, text: "古い香水の記憶を呼び覚ます", completed: false },
+            { id: 5, text: "ガラスの靴で砂浜を歩く", completed: false },
+            { id: 6, text: "沈黙の輪郭を指でなぞる", completed: false },
+            { id: 7, text: "月光で紅茶を淹れる", completed: false },
+            { id: 8, text: "迷子の猫に道を尋ねる", completed: false },
+            { id: 9, text: "枯れた花束に名前をつける", completed: false },
+            { id: 10, text: "鏡の向こうの自分とワルツを踊る", completed: false },
+            { id: 11, text: "壊れた時計の針を逆さに回す", completed: false },
+            { id: 12, text: "雲の切れ間に秘密を隠す", completed: false },
+            { id: 13, text: "読みかけの詩集を風に読ませる", completed: false },
+            { id: 14, text: "星屑をポケットに集める", completed: false },
+            { id: 15, text: "影と追いかけっこをする", completed: false },
+            { id: 16, text: "誰もいない遊園地でメリーゴーランドを回す", completed: false },
+            { id: 17, text: "溶けたアイスクリームの色を記録する", completed: false },
+            { id: 18, text: "深海魚の夢を見る", completed: false },
+            { id: 19, text: "透明なインクで日記を書く", completed: false },
+            { id: 20, text: "世界の終わりの静けさを愛でる", completed: false }
+        ];
+
+        const ADVICE_MAP = {
+            "夜明けの淡い光をスプーンですくう": "少しだけ早起きをして、窓の外の柔らかな光を眺め、深呼吸をしてみましょう。",
+            "誰にも宛てない手紙を瓶に詰める": "今日感じた小さな感情を、ノートの隅に一行だけ書き残してみませんか。",
+            "雨音の周波数をチューニングする": "お気に入りの落ち着いた曲を聴きながら、温かいお茶を淹れて一息つきましょう。",
+            "古い香水の記憶を呼び覚ます": "お気に入りの香りを少しだけ身に纏い、自分の輪郭を確かめてみてください。",
+            "ガラスの靴で砂浜を歩く": "部屋の中で素足になり、床の質感を感じながらゆっくりと歩いてみましょう。",
+            "沈黙の輪郭を指でなぞる": "一分間だけスマートフォンを置き、周囲の静かな音に耳を澄ませてみませんか。",
+            "月光で紅茶を淹れる": "今夜は少し良い茶葉を使って、ゆっくりと時間をかけてティータイムを楽しみましょう。",
+            "迷子の猫に道を尋ねる": "近所を少しだけ、目的を持たずに散歩してみるのがよろしいかと存じます。",
+            "枯れた花束に名前をつける": "散らかった机の上のものを一つだけ、元の場所に戻して整理してみましょう。",
+            "鏡の向こうの自分とワルツを踊る": "鏡の前の自分を見つめ、少しだけ背筋を伸ばして微笑んでみてください。",
+            "壊れた時計の針を逆さに回す": "デジタルな時間を忘れ、アナログな趣味に冒頭する時間を作ってみましょう。",
+            "雲の切れ間に秘密を隠す": "ベランダに出て、流れる雲や空の色をただぼんやりと眺めてみてください。",
+            "読みかけの詩集を風に読ませる": "本棚から一冊手に取り、偶然開いたページの最初の一行だけ読んでみましょう。",
+            "星屑をポケットに集める": "今日あった「良かったこと」を三つだけ、心の中で数えてみてください。",
+            "影と追いかけっこをする": "軽くストレッチをして、自分の体の動きを丁寧になぞるように動かしてみましょう。",
+            "誰もいない遊園地でメリーゴーランドを回す": "好きな動画や映画を一本、誰にも邪魔されずに没頭して楽しみましょう。",
+            "溶けたアイスクリームの色を記録する": "自分へのご褒美に、小さなお菓子やフルーツを一口ゆっくり味わってください。",
+            "深海魚の夢を見る": "今夜はいつもより少しだけ早く、心地よいリネンに包まれて眠りにつきましょう。",
+            "透明なインクで日記を書く": "手を丁寧に洗い、保湿をして、自分のために指先を労わってあげてください。",
+            "世界の終わりの静けさを愛でる": "部屋の明かりを少し落とし、自分自身の呼吸の音に意識を向けてみましょう。"
+        };
+
+        const viewConfigs = {
+            garden: { title: 'Melty Note', subtitle: 'Collect your fragments' },
+            atelier: { title: 'Melty Atelier', subtitle: 'Weave your story' },
+            archives: { title: 'Melty Archives', subtitle: 'Collected memories' }
+        };
+
+        let state = {
+            activeView: 'garden',
+            todos: JSON.parse(localStorage.getItem('melty_todos')) || DEFAULT_MELTY_TODOS,
+            archives: JSON.parse(localStorage.getItem('melty_archives')) || []
+        };
+
+        function saveData() {
+            localStorage.setItem('melty_todos', JSON.stringify(state.todos));
+            localStorage.setItem('melty_archives', JSON.stringify(state.archives));
+        }
+
+        // --- Navigation Logic ---
+        function switchView(viewName) {
+            state.activeView = viewName;
+
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+
+            document.getElementById('headerTitle').textContent = viewConfigs[viewName].title;
+            document.getElementById('headerSubtitle').textContent = viewConfigs[viewName].subtitle;
+
+            if (viewName === 'garden') renderGarden();
+            if (viewName === 'archives') renderArchives();
+
+            lucide.createIcons();
+        }
+
+        // --- Garden (ToDo) Logic ---
+        function addTodo() {
+            const todoInput = document.getElementById('todoInput');
+            const text = todoInput.value.trim();
+            if (!text) return;
+
+            state.todos.unshift({ id: Date.now(), text: text, completed: false });
+            todoInput.value = '';
+            saveData();
+            renderGarden();
+        }
+
+        function toggleTodo(id) {
+            state.todos = state.todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+            saveData();
+            renderGarden();
+        }
+
+        function deleteTodo(id) {
+            console.log('Deleting TODO:', id);
+            state.todos = state.todos.filter(t => Number(t.id) !== Number(id));
+            if (state.todos.length === 0) state.todos = [...DEFAULT_MELTY_TODOS];
+            saveData();
+            renderGarden();
+        }
+
+        // --- Long Press Logic ---
+        let pressTimer;
+        function handleStart(text) {
+            pressTimer = setTimeout(() => showAdvice(text), 800);
+        }
+        function handleCancel() {
+            clearTimeout(pressTimer);
+        }
+
+        function showAdvice(text) {
+            const adviceModal = document.getElementById('adviceModal');
+            const adviceText = document.getElementById('adviceText');
+            const advice = ADVICE_MAP[text] || "この抽象的な欠片を、お嬢様の感性で現実へと紡いでみてください。";
+            adviceText.textContent = advice;
+            adviceModal.classList.add('active');
+        }
+
+        // --- Render Logic ---
+        function renderGarden() {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = '';
+
+            if (state.todos.length === 0) {
+                state.todos = [...DEFAULT_MELTY_TODOS];
+                saveData();
+            }
+
+            state.todos.forEach(todo => {
+                const item = document.createElement('div');
+                item.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+                item.onclick = () => toggleTodo(todo.id);
+
+                item.addEventListener('mousedown', () => handleStart(todo.text));
+                item.addEventListener('touchstart', () => handleStart(todo.text));
+                item.addEventListener('mouseup', handleCancel);
+                item.addEventListener('mouseleave', handleCancel);
+                item.addEventListener('touchend', handleCancel);
+
+                item.innerHTML = `
+                    <div class="todo-icon">
+                        <i data-lucide="heart" size="16" ${todo.completed ? 'fill="currentColor"' : 'stroke-width="1"'}></i>
+                    </div>
+                    <span class="todo-text">${todo.text}</span>
+                `;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-delete';
+                deleteBtn.innerHTML = '<i data-lucide="x" size="14"></i>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteTodo(todo.id);
+                };
+
+                item.appendChild(deleteBtn);
+                todoList.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function renderArchives() {
+            const archiveList = document.getElementById('archiveList');
+            archiveList.innerHTML = '';
+
+            if (state.archives.length === 0) {
+                archiveList.innerHTML = `<div class="empty-state"><i data-lucide="book-open" size="24"></i><span>No memories preserved</span></div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            state.archives.forEach(archive => {
+                const card = document.createElement('div');
+                card.className = 'archive-card';
+                card.innerHTML = `
+                    <div class="archive-date"><i data-lucide="calendar" size="10"></i> ${archive.date}</div>
+                    <p class="archive-text">${archive.text}</p>
+                `;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-delete-archive';
+                deleteBtn.innerHTML = '<i data-lucide="trash-2" size="12"></i>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteArchive(archive.id);
+                };
+
+                card.appendChild(deleteBtn);
+                archiveList.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function deleteArchive(id) {
+            console.log('Deleting Archive:', id);
+            if (confirm('この記憶を消去してもよろしいですか？')) {
+                state.archives = state.archives.filter(a => Number(a.id) !== Number(id));
+                saveData();
+                renderArchives();
+            }
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            const container = document.getElementById('appContainer');
+            setTimeout(() => container.classList.remove('hidden'), 100);
+
+            // Set up event listeners that don't use onclick
+            document.getElementById('addBtn').addEventListener('click', addTodo);
+            document.getElementById('todoInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTodo(); });
+
+            document.getElementById('weaveBtn').addEventListener('click', () => {
+                const input = document.getElementById('atelierInput');
+                const text = input.value.trim();
+                if (!text) return;
+                state.archives.unshift({
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.'),
+                    text: text
+                });
+                input.value = '';
+                saveData();
+                switchView('archives');
+            });
+
+            document.getElementById('closeModal').onclick = () => document.getElementById('adviceModal').classList.remove('active');
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.addEventListener('click', () => switchView(btn.dataset.view));
+            });
+
+            renderGarden();
+        });
+    </script>
+</body>
+
+</html>
