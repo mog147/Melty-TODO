@@ -424,8 +424,9 @@
         }
 
         .archive-card:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(168, 85, 247, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(176, 122, 255, 0.15);
+            box-shadow: 0 0 30px rgba(176, 122, 255, 0.03);
         }
 
         .archive-date {
@@ -1146,10 +1147,16 @@
             archiveList.innerHTML = '';
 
             if (state.archives.length === 0) {
-                archiveList.innerHTML = `<div class="empty-state"><i data-lucide="book-open" size="24"></i><span>No memories preserved</span></div>`;
+                archiveList.innerHTML = `<div class="empty-state"><i data-lucide="book-open" size="24"></i><span>まだ記憶は紡がれていない</span></div>`;
                 lucide.createIcons();
                 return;
             }
+
+            // Poetic count
+            const countEl = document.createElement('div');
+            countEl.style.cssText = 'text-align:center;font-family:Cinzel,serif;font-size:8px;letter-spacing:0.3em;color:var(--text-dim);margin-bottom:2rem;opacity:0.5';
+            countEl.textContent = `${state.archives.length} FRAGMENT${state.archives.length > 1 ? 'S' : ''} PRESERVED`;
+            archiveList.appendChild(countEl);
 
             state.archives.forEach(archive => {
                 const card = document.createElement('div');
