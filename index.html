@@ -221,46 +221,6 @@
         }
 
         /* --- Garden (ToDo) View --- */
-        .input-group {
-            position: relative;
-            margin-bottom: 2rem;
-        }
-
-        .input-group input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: none;
-            border-bottom: 1px solid var(--border-white);
-            padding: 0.75rem 3rem 0.75rem 0.5rem;
-            color: var(--text-main);
-            font-family: 'Zen Kaku Gothic New', sans-serif;
-            font-size: 0.9rem;
-            transition: all 0.5s;
-            border-radius: 0.25rem 0.25rem 0 0;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(168, 85, 247, 0.3);
-        }
-
-        .btn-add {
-            position: absolute;
-            right: 0.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .btn-add:hover {
-            color: var(--accent-purple);
-        }
-
         .todo-item {
             display: flex;
             align-items: center;
@@ -308,22 +268,6 @@
             filter: blur(1.5px);
         }
 
-        .btn-delete {
-            opacity: 0;
-            color: #450a0a;
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .todo-item:hover .btn-delete {
-            opacity: 1;
-        }
-
-        .btn-delete:hover {
-            color: #991b1b;
-        }
 
         /* --- Atelier (Note) View --- */
         .atelier-prompt {
@@ -804,10 +748,6 @@
         <div class="content-area">
             <!-- Garden View -->
             <div id="view-garden" class="view active">
-                <div class="input-group">
-                    <input type="text" id="todoInput" placeholder="欠片を言葉にする..." autocomplete="off">
-                    <button class="btn-add" id="addBtn"><i data-lucide="plus" size="18"></i></button>
-                </div>
                 <div id="todoList"></div>
             </div>
 
@@ -998,12 +938,19 @@
 
         let state = {
             activeView: 'garden',
-            todos: JSON.parse(localStorage.getItem('melty_todos')) || DEFAULT_MELTY_TODOS,
+            todos: DEFAULT_MELTY_TODOS,
+            completedIds: JSON.parse(localStorage.getItem('melty_completed')) || [],
             archives: JSON.parse(localStorage.getItem('melty_archives')) || []
         };
 
+        // Mark completed state from localStorage
+        state.todos = state.todos.map(t => ({
+            ...t,
+            completed: state.completedIds.includes(t.id)
+        }));
+
         function saveData() {
-            localStorage.setItem('melty_todos', JSON.stringify(state.todos));
+            localStorage.setItem('melty_completed', JSON.stringify(state.todos.filter(t => t.completed).map(t => t.id)));
             localStorage.setItem('melty_archives', JSON.stringify(state.archives));
         }
 
@@ -1031,17 +978,6 @@
         }
 
         // --- Garden (ToDo) Logic ---
-        function addTodo() {
-            const todoInput = document.getElementById('todoInput');
-            const text = todoInput.value.trim();
-            if (!text) return;
-
-            state.todos.unshift({ id: Date.now(), text: text, completed: false });
-            todoInput.value = '';
-            saveData();
-            renderGarden();
-        }
-
         function toggleTodo(id) {
             state.todos = state.todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
             saveData();
@@ -1061,10 +997,6 @@
             document.getElementById('confirmModal').classList.remove('active');
             pendingDeleteId = null;
             pendingDeleteType = null;
-        }
-
-        function deleteTodo(id) {
-            openConfirm('todo', id);
         }
 
         // --- Long Press Logic ---
@@ -1088,12 +1020,6 @@
         function renderGarden() {
             const todoList = document.getElementById('todoList');
             todoList.innerHTML = '';
-            document.getElementById('todoInput').placeholder = GARDEN_PLACEHOLDERS[Math.floor(Math.random() * GARDEN_PLACEHOLDERS.length)];
-
-            if (state.todos.length === 0) {
-                state.todos = [...DEFAULT_MELTY_TODOS];
-                saveData();
-            }
 
             state.todos.forEach(todo => {
                 const item = document.createElement('div');
@@ -1113,15 +1039,6 @@
                     <span class="todo-text">${todo.text}</span>
                 `;
 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn-delete';
-                deleteBtn.innerHTML = '<i data-lucide="x" size="14"></i>';
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    deleteTodo(todo.id);
-                };
-
-                item.appendChild(deleteBtn);
                 todoList.appendChild(item);
             });
             lucide.createIcons();
@@ -1168,15 +1085,6 @@
         function deleteArchive(id) {
             openConfirm('archive', id);
         }
-
-        // --- Garden: Random Placeholders ---
-        const GARDEN_PLACEHOLDERS = [
-            '欠片を言葉にする...',
-            '儚い想いを閉じ込める...',
-            '霧の中から言葉を拾う...',
-            '夜に溶ける前に...',
-            '消えそうな感情を捕まえる...',
-        ];
 
         // --- Atelier: Writing Prompts ---
         const WRITING_PROMPTS = [
@@ -1360,10 +1268,6 @@
             const container = document.getElementById('appContainer');
             setTimeout(() => container.classList.remove('hidden'), 100);
 
-            // Set up event listeners that don't use onclick
-            document.getElementById('addBtn').addEventListener('click', addTodo);
-            document.getElementById('todoInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTodo(); });
-
             document.getElementById('atelierInput').addEventListener('input', (e) => {
                 document.getElementById('charCount').textContent = e.target.value.length;
             });
@@ -1386,13 +1290,7 @@
 
             document.getElementById('confirmOk').onclick = () => {
                 const id = pendingDeleteId;
-                const type = pendingDeleteType;
-                if (type === 'todo') {
-                    state.todos = state.todos.filter(t => Number(t.id) !== Number(id));
-                    if (state.todos.length === 0) state.todos = [...DEFAULT_MELTY_TODOS];
-                    saveData();
-                    renderGarden();
-                } else if (type === 'archive') {
+                if (pendingDeleteType === 'archive') {
                     state.archives = state.archives.filter(a => Number(a.id) !== Number(id));
                     saveData();
                     renderArchives();
