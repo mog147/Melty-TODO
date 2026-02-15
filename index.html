@@ -1334,9 +1334,28 @@
             document.getElementById('oracleText').textContent = getOracle();
         }
 
+        // --- Time-based Atmosphere ---
+        function applyTimeAtmosphere() {
+            const h = new Date().getHours();
+            const root = document.documentElement;
+            if (h >= 0 && h < 5) {
+                // Deep night — most immersive
+                root.style.setProperty('--bg-color', '#020108');
+                document.getElementById('headerSubtitle').textContent = viewConfigs[state.activeView]?.subtitle || 'The world sleeps, but you remain';
+            } else if (h >= 5 && h < 7) {
+                // Dawn
+                root.style.setProperty('--bg-color', '#050310');
+            } else if (h >= 18 && h < 22) {
+                // Evening
+                root.style.setProperty('--bg-color', '#04020a');
+            }
+            // else default palette
+        }
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            applyTimeAtmosphere();
             const container = document.getElementById('appContainer');
             setTimeout(() => container.classList.remove('hidden'), 100);
 
