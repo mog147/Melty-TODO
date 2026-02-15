@@ -13,13 +13,15 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-color: #050505;
-            --panel-bg: rgba(15, 15, 15, 0.4);
-            --border-white: rgba(255, 255, 255, 0.05);
-            --purple-glow: rgba(168, 85, 247, 0.1);
-            --text-main: #e5e7eb;
-            --text-dim: #6b7280;
-            --accent-purple: #a855f7;
+            --bg-color: #030208;
+            --panel-bg: rgba(10, 8, 18, 0.5);
+            --border-white: rgba(255, 255, 255, 0.04);
+            --purple-glow: rgba(168, 85, 247, 0.12);
+            --text-main: #d4d0e0;
+            --text-dim: #584f6d;
+            --accent-purple: #b07aff;
+            --accent-rose: rgba(180, 80, 120, 0.15);
+            --accent-gold: rgba(200, 170, 100, 0.08);
         }
 
         * {
@@ -65,34 +67,60 @@
         }
 
         .blob-1 {
-            top: -10%;
-            left: -10%;
+            top: -15%;
+            left: -15%;
             width: 600px;
             height: 600px;
-            background: rgba(88, 28, 135, 0.1);
+            background: rgba(100, 20, 140, 0.12);
         }
 
         .blob-2 {
-            bottom: -10%;
-            right: -10%;
+            bottom: -15%;
+            right: -15%;
             width: 700px;
             height: 700px;
-            background: rgba(30, 27, 75, 0.15);
+            background: rgba(20, 15, 60, 0.2);
             animation-delay: -5s;
         }
 
+        .blob-3 {
+            top: 40%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            background: rgba(140, 50, 80, 0.06);
+            animation-delay: -8s;
+        }
+
         @keyframes pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.4 }
+            33% { transform: scale(1.15) rotate(2deg); opacity: 0.7 }
+            66% { transform: scale(0.95) rotate(-1deg); opacity: 0.5 }
+        }
 
-            0%,
-            100% {
-                transform: scale(1);
-                opacity: 0.5;
-            }
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
 
-            50% {
-                transform: scale(1.1);
-                opacity: 0.8;
-            }
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(180, 160, 220, 0.3);
+            border-radius: 50%;
+            animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0 }
+            10% { opacity: 1 }
+            90% { opacity: 1 }
+            100% { transform: translateY(-20px) translateX(30px); opacity: 0 }
         }
 
         /* --- Main Container --- */
@@ -597,6 +625,8 @@
     <div class="bg-grain"></div>
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
+    <div class="particles" id="particles"></div>
 
     <div class="container hidden" id="appContainer">
         <!-- SVG Drip Decoration -->
@@ -679,6 +709,21 @@
     </div>
 
     <script>
+        // --- Floating Particles ---
+        (function initParticles() {
+            const c = document.getElementById('particles');
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (12 + Math.random() * 20) + 's';
+                p.style.animationDelay = -(Math.random() * 20) + 's';
+                p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+                p.style.opacity = 0.1 + Math.random() * 0.3;
+                c.appendChild(p);
+            }
+        })();
+
         // --- Data Management ---
         const DEFAULT_MELTY_TODOS = [
             { id: 1, text: "夜明けの淡い光をスプーンですくう", completed: false },
