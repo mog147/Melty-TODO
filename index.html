@@ -340,6 +340,50 @@
             box-shadow: 0 0 30px rgba(168, 85, 247, 0.1);
         }
 
+        /* --- Suggestions --- */
+        .suggestions {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .suggestions.visible { display: block }
+
+        .suggestions-label {
+            font-family: 'Cinzel', serif;
+            font-size: 8px;
+            letter-spacing: 0.3em;
+            color: var(--text-dim);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border-white);
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            font-weight: 300;
+            color: rgba(200, 180, 240, 0.6);
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(176, 122, 255, 0.05);
+            border-color: rgba(176, 122, 255, 0.15);
+            color: rgba(200, 180, 240, 0.85);
+        }
+
+        .suggestion-item .todo-icon {
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
         /* --- Archives View --- */
         .archive-card {
             background: rgba(255, 255, 255, 0.02);
@@ -761,6 +805,7 @@
                         <i data-lucide="feather" size="14"></i> PRESERVE MEMORY
                     </button>
                 </div>
+                <div id="suggestions" class="suggestions"></div>
             </div>
 
             <!-- Archives View -->
@@ -1103,6 +1148,99 @@
             return WRITING_PROMPTS[Math.floor(Math.random() * WRITING_PROMPTS.length)];
         }
 
+        // --- Atelier: Suggestion Engine ---
+        const TODO_TAGS = {
+            1:  ['夜明け','光','朝','静か'],
+            2:  ['手紙','孤独','言葉','瓶','想い'],
+            3:  ['雨','音','静か','落ち着く','夜'],
+            4:  ['香り','記憶','懐かしい','過去'],
+            5:  ['砂浜','歩く','夢','ガラス','幻'],
+            6:  ['沈黙','静か','指','輪郭','孤独'],
+            7:  ['月','紅茶','夜','光','淹れる'],
+            8:  ['猫','迷子','道','散歩','街'],
+            9:  ['花','枯れ','名前','終わり','美しい'],
+            10: ['鏡','踊る','自分','ワルツ','幻'],
+            11: ['時計','壊れ','時間','逆','過去'],
+            12: ['雲','空','秘密','隠す','風'],
+            13: ['詩','本','風','読む','言葉'],
+            14: ['星','夜','集める','光','ポケット'],
+            15: ['影','追いかけ','走る','遊び','光'],
+            16: ['遊園地','メリーゴーランド','一人','夢','幻'],
+            17: ['溶け','アイス','色','甘い','記録'],
+            18: ['深海','魚','夢','眠る','沈む'],
+            19: ['インク','日記','透明','書く','消える'],
+            20: ['世界','終わり','静か','愛でる','孤独'],
+            21: ['オルゴール','錆び','音','最後','儚い'],
+            22: ['絵画','退色','色','住む','過去'],
+            23: ['美術館','夜','絵','視線','静か'],
+            24: ['ピアノ','廃墟','弾く','月光','音'],
+            25: ['蝋燭','燃え','煙','文字','消える'],
+            26: ['傘','雨','忘れ物','一人','独り占め'],
+            27: ['夕暮れ','色','名前','見送る','空'],
+            28: ['ステンドグラス','割れ','光','虹','集める'],
+        };
+
+        function suggestTodos(text) {
+            const el = document.getElementById('suggestions');
+            if (!text || text.length < 3) { el.classList.remove('visible'); return }
+
+            // Score each TODO by keyword matches
+            const scores = DEFAULT_MELTY_TODOS.map(todo => {
+                const tags = TODO_TAGS[todo.id] || [];
+                let score = 0;
+                tags.forEach(tag => { if (text.includes(tag)) score += 2 });
+                // Also match characters from the todo text itself
+                todo.text.split('').forEach(ch => { if (ch.length > 0 && text.includes(ch) && !'のをはがでにとも、。'.includes(ch)) score += 0.1 });
+                return { todo, score };
+            });
+
+            // Sort by score, take top candidates
+            scores.sort((a, b) => b.score - a.score);
+
+            let picks;
+            if (scores[0].score > 0) {
+                // Take top 3 with score > 0, fill with random if needed
+                const matched = scores.filter(s => s.score > 0);
+                picks = matched.slice(0, 3).map(s => s.todo);
+                while (picks.length < 3) {
+                    const remaining = DEFAULT_MELTY_TODOS.filter(t => !picks.includes(t));
+                    picks.push(remaining[Math.floor(Math.random() * remaining.length)]);
+                }
+            } else {
+                // Pure random 3
+                const shuffled = [...DEFAULT_MELTY_TODOS].sort(() => Math.random() - 0.5);
+                picks = shuffled.slice(0, 3);
+            }
+
+            el.innerHTML = `
+                <div class="suggestions-label">RESONATING FRAGMENTS</div>
+                ${picks.map(t => `
+                    <div class="suggestion-item" onclick="navigateToTodo(${t.id})">
+                        <div class="todo-icon"><i data-lucide="heart" size="14" stroke-width="1"></i></div>
+                        <span>${t.text}</span>
+                    </div>
+                `).join('')}
+            `;
+            el.classList.add('visible');
+            lucide.createIcons();
+        }
+
+        function navigateToTodo(id) {
+            switchView('garden');
+            // Briefly highlight the item
+            setTimeout(() => {
+                const items = document.querySelectorAll('.todo-item');
+                items.forEach(item => {
+                    if (item.querySelector('.todo-text')?.textContent === DEFAULT_MELTY_TODOS.find(t => t.id === id)?.text) {
+                        item.style.background = 'rgba(176, 122, 255, 0.08)';
+                        item.style.borderColor = 'rgba(176, 122, 255, 0.15)';
+                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => { item.style.background = ''; item.style.borderColor = '' }, 2000);
+                    }
+                });
+            }, 100);
+        }
+
         // --- Sanctuary: Breathing ---
         let breathingActive = false;
         let breathInterval = null;
@@ -1271,6 +1409,7 @@
 
             document.getElementById('atelierInput').addEventListener('input', (e) => {
                 document.getElementById('charCount').textContent = e.target.value.length;
+                suggestTodos(e.target.value.trim());
             });
 
             document.getElementById('weaveBtn').addEventListener('click', () => {
@@ -1283,6 +1422,8 @@
                     text: text
                 });
                 input.value = '';
+                document.getElementById('charCount').textContent = '0';
+                document.getElementById('suggestions').classList.remove('visible');
                 saveData();
                 switchView('archives');
             });
