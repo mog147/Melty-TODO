@@ -614,6 +614,110 @@
             border-color: var(--accent-purple);
         }
 
+        /* --- Sanctuary View --- */
+        .sanctuary {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 2rem;
+        }
+
+        .breath-ring {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 1px solid rgba(176, 122, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .breath-inner {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(176, 122, 255, 0.12), transparent);
+            box-shadow: 0 0 40px rgba(176, 122, 255, 0.08);
+            transition: all 4s ease-in-out;
+        }
+
+        .breath-ring.active .breath-inner {
+            animation: breathe 8s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { width: 40px; height: 40px; opacity: 0.4; box-shadow: 0 0 20px rgba(176, 122, 255, 0.05) }
+            25% { width: 110px; height: 110px; opacity: 0.9; box-shadow: 0 0 60px rgba(176, 122, 255, 0.15) }
+            50% { width: 110px; height: 110px; opacity: 0.7; box-shadow: 0 0 40px rgba(176, 122, 255, 0.1) }
+            75% { width: 40px; height: 40px; opacity: 0.4; box-shadow: 0 0 20px rgba(176, 122, 255, 0.05) }
+        }
+
+        .breath-text {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            letter-spacing: 0.15em;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            min-height: 1.5em;
+            transition: opacity 0.8s;
+        }
+
+        .btn-breathe {
+            background: rgba(176, 122, 255, 0.08);
+            border: 1px solid rgba(176, 122, 255, 0.15);
+            color: rgba(200, 180, 240, 0.7);
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            padding: 0.6rem 2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.5s;
+        }
+
+        .btn-breathe:hover {
+            background: rgba(176, 122, 255, 0.15);
+            border-color: rgba(176, 122, 255, 0.3);
+        }
+
+        .btn-breathe.active {
+            background: rgba(176, 122, 255, 0.05);
+            border-color: rgba(176, 122, 255, 0.1);
+            color: rgba(200, 180, 240, 0.4);
+        }
+
+        .oracle-section {
+            margin-top: 3rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .oracle-divider {
+            width: 40px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--text-dim), transparent);
+            margin: 0 auto 2rem;
+        }
+
+        .oracle-label {
+            font-family: 'Cinzel', serif;
+            font-size: 8px;
+            letter-spacing: 0.3em;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+        }
+
+        .oracle-text {
+            font-size: 0.85rem;
+            line-height: 2.2;
+            letter-spacing: 0.08em;
+            color: rgba(200, 180, 230, 0.6);
+            font-style: italic;
+            padding: 0 1rem;
+        }
+
         /* Prevent context menu during long press */
         .todo-item {
             -webkit-touch-callout: none;
@@ -665,6 +769,23 @@
             <div id="view-archives" class="view">
                 <div id="archiveList"></div>
             </div>
+
+            <!-- Sanctuary View -->
+            <div id="view-sanctuary" class="view">
+                <div class="sanctuary">
+                    <div class="breath-ring" id="breathRing">
+                        <div class="breath-inner"></div>
+                    </div>
+                    <div class="breath-text" id="breathText">ここは、あなただけの聖域</div>
+                    <button class="btn-breathe" id="btnBreathe" onclick="startBreathing()">呼吸をはじめる</button>
+
+                    <div class="oracle-section">
+                        <div class="oracle-divider"></div>
+                        <div class="oracle-label">TODAY'S ORACLE</div>
+                        <div class="oracle-text" id="oracleText"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <nav>
@@ -679,6 +800,10 @@
             <button class="nav-item" data-view="archives">
                 <i data-lucide="bookmark" size="18"></i>
                 <span>ARCHIVES</span>
+            </button>
+            <button class="nav-item" data-view="sanctuary">
+                <i data-lucide="moon" size="18"></i>
+                <span>SANCTUARY</span>
             </button>
         </nav>
     </div>
@@ -774,7 +899,8 @@
         const viewConfigs = {
             garden: { title: 'Melty Note', subtitle: 'Collect your fragments' },
             atelier: { title: 'Melty Atelier', subtitle: 'Weave your story' },
-            archives: { title: 'Melty Archives', subtitle: 'Collected memories' }
+            archives: { title: 'Melty Archives', subtitle: 'Collected memories' },
+            sanctuary: { title: 'Sanctuary', subtitle: 'Dissolve into silence' }
         };
 
         let state = {
@@ -803,6 +929,7 @@
 
             if (viewName === 'garden') renderGarden();
             if (viewName === 'archives') renderArchives();
+            if (viewName === 'sanctuary') renderSanctuary();
 
             lucide.createIcons();
         }
@@ -937,6 +1064,65 @@
 
         function deleteArchive(id) {
             openConfirm('archive', id);
+        }
+
+        // --- Sanctuary: Breathing ---
+        let breathingActive = false;
+        let breathInterval = null;
+        const breathCycle = ['吸って...', 'とめて...', '吐いて...', 'とめて...'];
+
+        function startBreathing() {
+            const ring = document.getElementById('breathRing');
+            const text = document.getElementById('breathText');
+            const btn = document.getElementById('btnBreathe');
+
+            if (breathingActive) {
+                breathingActive = false;
+                clearInterval(breathInterval);
+                ring.classList.remove('active');
+                text.textContent = 'ここは、あなただけの聖域';
+                btn.textContent = '呼吸をはじめる';
+                btn.classList.remove('active');
+                return;
+            }
+
+            breathingActive = true;
+            ring.classList.add('active');
+            btn.textContent = 'やめる';
+            btn.classList.add('active');
+            let step = 0;
+            text.textContent = breathCycle[0];
+            breathInterval = setInterval(() => {
+                step = (step + 1) % 4;
+                text.textContent = breathCycle[step];
+            }, 2000);
+        }
+
+        // --- Sanctuary: Oracle ---
+        const ORACLE_POEMS = [
+            '崩れた薔薇の花弁に\n最も美しい色が宿る',
+            '夜が深いほど\n星は近くに降りてくる',
+            '壊れたものだけが\n本当の光を通す',
+            '忘れられた庭で\n名もなき花が\n誰よりも静かに咲いている',
+            'あなたの影は\n月明かりの中で\nもう一人のあなたを踊らせる',
+            '砕けたガラスの破片に\n虹が眠っている',
+            '終わりのない廊下を\n歩き続けることだけが\n唯一の自由',
+            '錆びた鍵は\nどの扉も開かないが\nすべての扉を知っている',
+            '雨の匂いを\n瓶に詰めることはできない\nだからこそ美しい',
+            '沈黙は\n最も雄弁な告白',
+            '溶けかけの蝋燭が\n一番あたたかい光を放つ',
+            '月が欠けている夜にこそ\n星が語りかけてくる',
+            '誰にも見せない涙は\n宝石よりも透明で\n宝石よりも重い',
+            '枯れた花が教えてくれる\n美しさは永遠でなくていい',
+        ];
+
+        function getOracle() {
+            const day = Math.floor(Date.now() / 86400000);
+            return ORACLE_POEMS[day % ORACLE_POEMS.length];
+        }
+
+        function renderSanctuary() {
+            document.getElementById('oracleText').textContent = getOracle();
         }
 
         // --- Initialization ---
