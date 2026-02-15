@@ -342,6 +342,31 @@
         }
 
         /* --- Atelier (Note) View --- */
+        .atelier-prompt {
+            font-size: 0.8rem;
+            color: rgba(200, 180, 240, 0.35);
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.1em;
+            line-height: 1.8;
+            min-height: 2em;
+        }
+
+        .atelier-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .char-count {
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            opacity: 0.4;
+        }
+
         .atelier-textarea {
             width: 100%;
             height: 200px;
@@ -803,10 +828,14 @@
 
             <!-- Atelier View -->
             <div id="view-atelier" class="view">
+                <div class="atelier-prompt" id="atelierPrompt"></div>
                 <textarea id="atelierInput" class="atelier-textarea" placeholder="言葉をここに沈める..."></textarea>
-                <button class="btn-weave" id="weaveBtn">
-                    <i data-lucide="feather" size="14"></i> PRESERVE MEMORY
-                </button>
+                <div class="atelier-footer">
+                    <span class="char-count" id="charCount">0</span>
+                    <button class="btn-weave" id="weaveBtn">
+                        <i data-lucide="feather" size="14"></i> PRESERVE MEMORY
+                    </button>
+                </div>
             </div>
 
             <!-- Archives View -->
@@ -1009,6 +1038,9 @@
             if (viewName === 'garden') renderGarden();
             if (viewName === 'archives') renderArchives();
             if (viewName === 'sanctuary') renderSanctuary();
+            if (viewName === 'atelier') {
+                document.getElementById('atelierPrompt').textContent = getWritingPrompt();
+            }
 
             lucide.createIcons();
         }
@@ -1143,6 +1175,22 @@
 
         function deleteArchive(id) {
             openConfirm('archive', id);
+        }
+
+        // --- Atelier: Writing Prompts ---
+        const WRITING_PROMPTS = [
+            '消えてしまう前に、今夜の気持ちを閉じ込めて',
+            '誰にも見せない言葉を、ここに沈めて',
+            '夢の残滓が消える前に、書き留めて',
+            '心の底に沈んだ言葉を、すくい上げて',
+            '現実と夢の境界線を、ここに引いて',
+            '忘れたいことも、忘れたくないことも',
+            '今この瞬間だけの感情を、琥珀に閉じ込めて',
+            '声にならなかった言葉を、文字にして',
+        ];
+
+        function getWritingPrompt() {
+            return WRITING_PROMPTS[Math.floor(Math.random() * WRITING_PROMPTS.length)];
         }
 
         // --- Sanctuary: Breathing ---
@@ -1295,6 +1343,10 @@
             // Set up event listeners that don't use onclick
             document.getElementById('addBtn').addEventListener('click', addTodo);
             document.getElementById('todoInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTodo(); });
+
+            document.getElementById('atelierInput').addEventListener('input', (e) => {
+                document.getElementById('charCount').textContent = e.target.value.length;
+            });
 
             document.getElementById('weaveBtn').addEventListener('click', () => {
                 const input = document.getElementById('atelierInput');
