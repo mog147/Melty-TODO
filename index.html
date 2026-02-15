@@ -240,7 +240,12 @@
             margin-bottom: 0.5rem;
             transition: all 0.5s;
             cursor: pointer;
+            /* Disable text selection and copy UI */
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .todo-item:hover {
@@ -763,10 +768,6 @@
             padding: 0 1rem;
         }
 
-        /* Prevent context menu during long press */
-        .todo-item {
-            -webkit-touch-callout: none;
-        }
     </style>
 </head>
 
