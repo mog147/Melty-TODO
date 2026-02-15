@@ -688,6 +688,39 @@
             color: rgba(200, 180, 240, 0.4);
         }
 
+        .ambient-section { width: 100%; text-align: center }
+        .ambient-btns {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .ambient-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-white);
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.4s;
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            min-width: 70px;
+        }
+
+        .ambient-btn:hover { border-color: rgba(176, 122, 255, 0.2) }
+        .ambient-btn.active {
+            background: rgba(176, 122, 255, 0.08);
+            border-color: rgba(176, 122, 255, 0.25);
+            color: rgba(200, 180, 240, 0.8);
+            box-shadow: 0 0 20px rgba(176, 122, 255, 0.05);
+        }
+
         .oracle-section {
             margin-top: 3rem;
             text-align: center;
@@ -778,6 +811,25 @@
                     </div>
                     <div class="breath-text" id="breathText">ここは、あなただけの聖域</div>
                     <button class="btn-breathe" id="btnBreathe" onclick="startBreathing()">呼吸をはじめる</button>
+
+                    <div class="ambient-section">
+                        <div class="oracle-divider" style="margin-top:2.5rem"></div>
+                        <div class="oracle-label">AMBIENT SOUND</div>
+                        <div class="ambient-btns">
+                            <button class="ambient-btn" onclick="toggleAmbient('rain')" id="amb-rain">
+                                <i data-lucide="cloud-rain" size="16"></i>
+                                <span>雨音</span>
+                            </button>
+                            <button class="ambient-btn" onclick="toggleAmbient('fire')" id="amb-fire">
+                                <i data-lucide="flame" size="16"></i>
+                                <span>暖炉</span>
+                            </button>
+                            <button class="ambient-btn" onclick="toggleAmbient('wind')" id="amb-wind">
+                                <i data-lucide="wind" size="16"></i>
+                                <span>夜風</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="oracle-section">
                         <div class="oracle-divider"></div>
@@ -1096,6 +1148,88 @@
                 step = (step + 1) % 4;
                 text.textContent = breathCycle[step];
             }, 2000);
+        }
+
+        // --- Sanctuary: Ambient Sound ---
+        let ambientCtx = null;
+        let ambientNodes = {};
+        let activeAmbient = null;
+
+        function createNoise(ctx, type) {
+            const bufferSize = ctx.sampleRate * 2;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            if (type === 'rain') {
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.3;
+                    if (Math.random() < 0.001) data[i] *= 3;
+                }
+            } else if (type === 'fire') {
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.2;
+                    if (i > 0) data[i] = data[i] * 0.3 + data[i-1] * 0.7;
+                }
+            } else if (type === 'wind') {
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * 0.15;
+                    if (i > 0) data[i] = data[i] * 0.1 + data[i-1] * 0.9;
+                }
+            }
+
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const filter = ctx.createBiquadFilter();
+            if (type === 'rain') { filter.type = 'highpass'; filter.frequency.value = 800 }
+            else if (type === 'fire') { filter.type = 'lowpass'; filter.frequency.value = 300 }
+            else { filter.type = 'bandpass'; filter.frequency.value = 400; filter.Q.value = 0.5 }
+
+            const gain = ctx.createGain();
+            gain.gain.value = 0;
+
+            source.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            source.start();
+
+            return { source, gain, filter };
+        }
+
+        function toggleAmbient(type) {
+            if (!ambientCtx) ambientCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            if (activeAmbient === type) {
+                // Stop
+                if (ambientNodes[type]) {
+                    ambientNodes[type].gain.gain.linearRampToValueAtTime(0, ambientCtx.currentTime + 1);
+                    const n = ambientNodes[type];
+                    setTimeout(() => { try { n.source.stop() } catch {} }, 1200);
+                    delete ambientNodes[type];
+                }
+                activeAmbient = null;
+                document.getElementById('amb-' + type).classList.remove('active');
+                return;
+            }
+
+            // Stop previous
+            if (activeAmbient && ambientNodes[activeAmbient]) {
+                const prev = activeAmbient;
+                ambientNodes[prev].gain.gain.linearRampToValueAtTime(0, ambientCtx.currentTime + 0.5);
+                const n = ambientNodes[prev];
+                setTimeout(() => { try { n.source.stop() } catch {} }, 700);
+                delete ambientNodes[prev];
+                document.getElementById('amb-' + prev).classList.remove('active');
+            }
+
+            // Start new
+            ambientNodes[type] = createNoise(ambientCtx, type);
+            const vol = type === 'rain' ? 0.12 : type === 'fire' ? 0.15 : 0.08;
+            ambientNodes[type].gain.gain.linearRampToValueAtTime(vol, ambientCtx.currentTime + 2);
+            activeAmbient = type;
+            document.getElementById('amb-' + type).classList.add('active');
+            lucide.createIcons();
         }
 
         // --- Sanctuary: Oracle ---
