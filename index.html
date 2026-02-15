@@ -803,7 +803,7 @@
             <!-- Garden View -->
             <div id="view-garden" class="view active">
                 <div class="input-group">
-                    <input type="text" id="todoInput" placeholder="言葉を閉じ込める..." autocomplete="off">
+                    <input type="text" id="todoInput" placeholder="欠片を言葉にする..." autocomplete="off">
                     <button class="btn-add" id="addBtn"><i data-lucide="plus" size="18"></i></button>
                 </div>
                 <div id="todoList"></div>
@@ -1086,6 +1086,7 @@
         function renderGarden() {
             const todoList = document.getElementById('todoList');
             todoList.innerHTML = '';
+            document.getElementById('todoInput').placeholder = GARDEN_PLACEHOLDERS[Math.floor(Math.random() * GARDEN_PLACEHOLDERS.length)];
 
             if (state.todos.length === 0) {
                 state.todos = [...DEFAULT_MELTY_TODOS];
@@ -1165,6 +1166,15 @@
         function deleteArchive(id) {
             openConfirm('archive', id);
         }
+
+        // --- Garden: Random Placeholders ---
+        const GARDEN_PLACEHOLDERS = [
+            '欠片を言葉にする...',
+            '儚い想いを閉じ込める...',
+            '霧の中から言葉を拾う...',
+            '夜に溶ける前に...',
+            '消えそうな感情を捕まえる...',
+        ];
 
         // --- Atelier: Writing Prompts ---
         const WRITING_PROMPTS = [
