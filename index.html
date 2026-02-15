@@ -1027,7 +1027,7 @@
                 item.onclick = () => toggleTodo(todo.id);
 
                 item.addEventListener('mousedown', () => handleStart(todo.text));
-                item.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(todo.text) });
+                item.addEventListener('touchstart', () => handleStart(todo.text), { passive: true });
                 item.addEventListener('mouseup', handleCancel);
                 item.addEventListener('mouseleave', handleCancel);
                 item.addEventListener('touchend', handleCancel);
