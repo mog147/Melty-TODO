@@ -1027,10 +1027,11 @@
                 item.onclick = () => toggleTodo(todo.id);
 
                 item.addEventListener('mousedown', () => handleStart(todo.text));
-                item.addEventListener('touchstart', () => handleStart(todo.text));
+                item.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(todo.text) });
                 item.addEventListener('mouseup', handleCancel);
                 item.addEventListener('mouseleave', handleCancel);
                 item.addEventListener('touchend', handleCancel);
+                item.addEventListener('contextmenu', (e) => e.preventDefault());
 
                 item.innerHTML = `
                     <div class="todo-icon">
