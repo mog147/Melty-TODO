@@ -129,14 +129,16 @@
             max-width: 450px;
             height: 90vh;
             background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-white);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(176, 122, 255, 0.04);
             border-radius: 2rem;
             position: relative;
             z-index: 10;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+            box-shadow:
+                0 40px 80px -20px rgba(0, 0, 0, 0.9),
+                0 0 80px -30px rgba(100, 50, 180, 0.05);
             overflow: hidden;
             transition: opacity 1s, transform 1s;
         }
@@ -466,9 +468,9 @@
             /* Fixed height for consistency */
             padding: 0 1rem 1.5rem;
             /* Space for home indicator on mobile */
-            background: rgba(8, 8, 8, 0.98);
+            background: rgba(5, 3, 12, 0.98);
             backdrop-filter: blur(30px);
-            border-top: 1px solid var(--border-white);
+            border-top: 1px solid rgba(176, 122, 255, 0.04);
             display: flex;
             justify-content: space-around;
             align-items: center;
